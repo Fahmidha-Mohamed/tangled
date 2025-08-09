@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Bee Letter Catch - Happy Birthday Zainul</title>
+<title>Happy Birthday Zainul - Bee Catch Game</title>
 <style>
   * { margin:0; padding:0; box-sizing: border-box; }
   body, html {
@@ -105,7 +105,7 @@
 </head>
 <body>
   <div id="game-container">
-    <div id="hud">Spell: <span id="next-letter"></span></div>
+    <div id="hud">Next Letter: <span id="next-letter"></span></div>
     <canvas id="game" width="480" height="640"></canvas>
   </div>
 
@@ -116,7 +116,7 @@
       <div id="final-message" hidden>Foumi loves you most &lt;3</div>
     </div>
     <div id="birthday-text" style="display:none;">HAPPY BIRTHDAYY ZAINUL</div>
-    <canvas id="fireworks" width="480" height="200" style="border-radius: 12px;"></canvas>
+    <canvas id="fireworks" width="480" height="200" style="border-radius: 12px; display:none;"></canvas>
   </div>
 
   <canvas id="stars"></canvas>
@@ -149,14 +149,13 @@
     width: 120,
     height: 28,
     speed: 10,
-    vx: 0
   };
 
   // Bee size
   const beeRadius = 28;
 
   // Bee falling speed
-  const beeSpeed = 2.6;
+  const beeSpeed = 3.2;
 
   // Current bee (letter carrier)
   let bee = null;
@@ -323,7 +322,6 @@
       y: -beeRadius*2,
       letter: letter,
       radius: beeRadius,
-      caught: false
     };
     nextLetterEl.textContent = letter;
   }
@@ -467,7 +465,7 @@
             yesButton.style.display = 'inline-block';
             finalMessage.hidden = true;
             showOverlay();
-          }, 4000);
+          }, 3500);
         } else {
           spawnBee();
         }
@@ -477,11 +475,8 @@
     }
 
     ctx.clearRect(0,0,W,H);
-
     drawStars();
-
     if(bee) drawBee(bee);
-
     drawBasket();
 
     if(!running){
@@ -491,22 +486,17 @@
         fw.draw(fwCtx);
       });
       fireworks = fireworks.filter(fw => !fw.isDone());
-
       if(fireworks.length === 0){
-        // Relaunch fireworks every 1.5 sec if dialog not visible
-        if(dialog.style.display === 'none'){
-          launchFireworks();
-        }
+        launchFireworks();
       }
     }
 
-    if(running){
+    if(running) {
       nextLetterEl.textContent = LETTERS[nextIndex];
       requestAnimationFrame(gameLoop);
     }
   }
 
-  // Resize canvases on window resize
   function resizeCanvases(){
     starsCanvas.width = window.innerWidth;
     starsCanvas.height = window.innerHeight;
@@ -519,10 +509,12 @@
     initStars();
   });
 
+  // Initialize
   resizeCanvases();
   initStars();
   spawnBee();
   requestAnimationFrame(gameLoop);
+
 })();
 </script>
 </body>
