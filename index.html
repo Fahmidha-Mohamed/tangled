@@ -152,20 +152,16 @@
     vx: 0
   };
 
-  // Bee image (simple cartoon bee)
-  const beeImg = new Image();
-  beeImg.src = 'https://i.imgur.com/Nk3W0lx.png'; // simpler cartoon bee
-
-  // Bee properties
+  // Bee size
   const beeRadius = 28;
 
-  // Speed faster
+  // Bee falling speed
   const beeSpeed = 2.6;
 
-  // Current bee (carries letter)
+  // Current bee (letter carrier)
   let bee = null;
 
-  // Letter index we want to catch next
+  // Next letter index
   let nextIndex = 0;
 
   // Stars for background
@@ -175,18 +171,14 @@
   // Fireworks vars
   const fwWidth = fireworksCanvas.width;
   const fwHeight = fireworksCanvas.height;
-  let fwParticles = [];
+  let fireworks = [];
 
   // Controls
   let keys = {};
-  window.addEventListener('keydown', e => {
-    keys[e.key] = true;
-  });
-  window.addEventListener('keyup', e => {
-    keys[e.key] = false;
-  });
+  window.addEventListener('keydown', e => { keys[e.key] = true; });
+  window.addEventListener('keyup', e => { keys[e.key] = false; });
 
-  // Touch drag support for basket
+  // Drag support for basket
   let dragging = false;
   let dragOffsetX = 0;
   canvas.addEventListener('mousedown', e => {
@@ -237,7 +229,7 @@
     dragging = false;
   });
 
-  // Stars init and draw
+  // Init stars background
   function initStars() {
     starsCanvas.width = window.innerWidth;
     starsCanvas.height = window.innerHeight;
@@ -322,7 +314,7 @@
     }
   }
 
-  // Create a new bee object with letter and start x position
+  // Spawn bee with letter
   function spawnBee(){
     const letter = LETTERS[nextIndex];
     const x = Math.random()*(W - beeRadius*2) + beeRadius;
@@ -336,37 +328,76 @@
     nextLetterEl.textContent = letter;
   }
 
-  // Draw bee image with letter on it
+  // Draw bee cartoon with letter
   function drawBee(b){
-    ctx.drawImage(beeImg, b.x - beeRadius, b.y - beeRadius, beeRadius*2, beeRadius*2);
+    const x = b.x;
+    const y = b.y;
+    const r = b.radius;
+
+    // Body - yellow oval
+    ctx.beginPath();
+    ctx.ellipse(x, y, r*0.7, r, 0, 0, 2 * Math.PI);
+    ctx.fillStyle = '#FFDD55';
+    ctx.fill();
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Black stripes
+    for(let i=-0.5; i<0.5; i+=0.25){
+      ctx.beginPath();
+      ctx.ellipse(x + i*r*0.5, y, r*0.2, r*0.9, 0, 0, 2 * Math.PI);
+      ctx.fillStyle = '#000';
+      ctx.fill();
+    }
+
+    // Wings
+    ctx.beginPath();
+    ctx.ellipse(x - r*0.35, y - r*0.6, r*0.35, r*0.5, Math.PI/8, 0, 2 * Math.PI);
+    ctx.ellipse(x + r*0.35, y - r*0.6, r*0.35, r*0.5, -Math.PI/8, 0, 2 * Math.PI);
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fill();
+    ctx.stroke();
+
+    // Eyes
+    ctx.beginPath();
+    ctx.arc(x - r*0.25, y - r*0.15, r*0.15, 0, 2*Math.PI);
+    ctx.arc(x + r*0.25, y - r*0.15, r*0.15, 0, 2*Math.PI);
+    ctx.fillStyle = '#000';
+    ctx.fill();
+
+    // Pupils
+    ctx.beginPath();
+    ctx.arc(x - r*0.25, y - r*0.15, r*0.07, 0, 2*Math.PI);
+    ctx.arc(x + r*0.25, y - r*0.15, r*0.07, 0, 2*Math.PI);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
 
     // Letter on bee
     ctx.fillStyle = '#3b2a00';
     ctx.font = '28px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(b.letter, b.x, b.y + 4);
+    ctx.fillText(b.letter, x, y + 4);
   }
 
-  // Draw basket (simple rectangle with rim)
+  // Draw basket
   function drawBasket(){
     ctx.fillStyle = '#8b5e3c';
     ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
     ctx.fillStyle = '#a36b45';
     ctx.fillRect(basket.x, basket.y - 6, basket.width, 8);
 
-    // Cloth inside basket
     ctx.fillStyle = '#ffdfc1';
     ctx.fillRect(basket.x + 8, basket.y + 4, basket.width - 16, 6);
 
-    // Basket shadow
     ctx.beginPath();
     ctx.ellipse(basket.x + basket.width/2, basket.y + basket.height + 8, basket.width/2, 8, 0, 0, 2*Math.PI);
     ctx.fillStyle = 'rgba(0,0,0,0.25)';
     ctx.fill();
   }
 
-  // Check if basket caught the bee (rectangle-circle collision)
+  // Check catch
   function checkCatch(){
     if(!bee) return false;
     const closestX = Math.max(basket.x, Math.min(bee.x, basket.x + basket.width));
@@ -377,22 +408,21 @@
     return distance < bee.radius + 4;
   }
 
-  // Controls and game variables
+  // Game variables
   let lastTime = 0;
   let running = true;
 
-  // Show overlay with dialog
+  // Show/hide overlay
   function showOverlay(){
     overlay.style.visibility = 'visible';
     overlay.style.opacity = '1';
   }
-  // Hide overlay
   function hideOverlay(){
     overlay.style.visibility = 'hidden';
     overlay.style.opacity = '0';
   }
 
-  // Handle YES button click
+  // Yes button event
   yesButton.onclick = () => {
     dialogText.textContent = '';
     yesButton.style.display = 'none';
@@ -405,7 +435,7 @@
     const dt = timestamp - lastTime;
     lastTime = timestamp;
 
-    // Move basket
+    // Basket movement
     if(keys['ArrowLeft']) basket.x -= basket.speed;
     if(keys['ArrowRight']) basket.x += basket.speed;
     if(basket.x < 0) basket.x = 0;
@@ -415,13 +445,12 @@
     if(bee && running){
       bee.y += beeSpeed;
 
-      // Check catch
       if(checkCatch()){
         nextIndex++;
         if(nextIndex >= LETTERS.length){
           bee = null;
           running = false;
-          // Show birthday + fireworks first
+
           birthdayText.style.display = 'block';
           fireworksCanvas.style.display = 'block';
           dialog.style.display = 'none';
@@ -430,7 +459,6 @@
 
           launchFireworks();
 
-          // After 4 seconds show "Do you love Foumi?"
           setTimeout(() => {
             birthdayText.style.display = 'none';
             fireworksCanvas.style.display = 'none';
@@ -444,24 +472,18 @@
           spawnBee();
         }
       } else if(bee.y - bee.radius > H){
-        // Missed bee, retry same letter by respawning
         spawnBee();
       }
     }
 
-    // Clear canvas
     ctx.clearRect(0,0,W,H);
 
-    // Draw stars
     drawStars();
 
-    // Draw bee
     if(bee) drawBee(bee);
 
-    // Draw basket
     drawBasket();
 
-    // Draw fireworks only after message complete
     if(!running){
       fwCtx.clearRect(0,0,fwWidth, fwHeight);
       fireworks.forEach(fw => {
@@ -478,15 +500,13 @@
       }
     }
 
-    // Update HUD letter
     if(running){
       nextLetterEl.textContent = LETTERS[nextIndex];
+      requestAnimationFrame(gameLoop);
     }
-
-    if(running) requestAnimationFrame(gameLoop);
   }
 
-  // Resize stars and fireworks canvas
+  // Resize canvases on window resize
   function resizeCanvases(){
     starsCanvas.width = window.innerWidth;
     starsCanvas.height = window.innerHeight;
@@ -498,9 +518,9 @@
     resizeCanvases();
     initStars();
   });
+
   resizeCanvases();
   initStars();
-
   spawnBee();
   requestAnimationFrame(gameLoop);
 })();
