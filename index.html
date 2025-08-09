@@ -1,480 +1,447 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Lantern Catch — Happy Birthday Zainul</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Lantern Catch - Happy Birthday Zainul</title>
 <style>
-  :root {
-    --bg: linear-gradient(#041426, #091834 50%, #0b2b43 100%);
-    --panel: rgba(255,255,255,0.03);
-    --accent: #ffcc66;
+  /* Reset & basics */
+  * { margin:0; padding:0; box-sizing: border-box; }
+  body, html {
+    height: 100%;
+    background: radial-gradient(ellipse at center, #0a122a 0%, #04081b 100%);
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: white;
+    user-select: none;
   }
-  html,body { height:100%; margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; background:var(--bg); color:white; }
-  #gameWrap { max-width:640px; margin:20px auto; text-align:center; }
-  h1 { margin:8px 0 4px; font-size:20px; letter-spacing:0.5px; }
-  canvas { background:transparent; display:block; margin: 12px auto; border-radius:10px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
-  #hud { display:flex; justify-content:space-between; align-items:center; gap:8px; margin:8px 0; }
-  #messageBar { background:var(--panel); padding:8px 10px; border-radius:8px; min-width:220px; }
-  #lettersNeeded { font-weight:600; color:var(--accent); letter-spacing:1px; }
-  #overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.6); visibility:hidden; opacity:0; transition:opacity .2s, visibility .2s; }
-  #dialog { background:#081826; padding:22px; border-radius:12px; text-align:center; min-width:280px; box-shadow:0 8px 30px rgba(0,0,0,0.7); }
-  #dialog p { margin:8px 0 16px; font-size:18px; }
-  .btn {
-    background:linear-gradient(180deg,#ff7b9a,#ff4f7a);
-    color:white; border:none; padding:10px 18px; border-radius:999px; font-weight:700; cursor:pointer; box-shadow:0 6px 14px rgba(255,80,120,0.15);
+  #game-container {
+    max-width: 480px;
+    margin: 1em auto;
+    position: relative;
   }
-  .btn:active { transform:translateY(1px); }
-  #finalText { font-size:18px; color:#ffdfc1; }
-  #howto { font-size:13px; color:#b7d4e6; margin-top:8px; }
-  footer { margin-top:14px; color:#9fb9cf; font-size:13px; }
-  /* small responsive */
-  @media (max-width:420px){
-    canvas{width:320px; height:480px;}
+  canvas {
+    display: block;
+    width: 100%;
+    height: 640px;
+    background: transparent;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(255 204 102 / 0.3);
+  }
+  #hud {
+    margin: 1em 0 0.5em;
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 2px;
+    font-size: 1.2em;
+    color: #ffcc66;
+  }
+  #overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 10;
+  }
+  #dialog {
+    background: #1a2136;
+    padding: 2em 2.5em;
+    border-radius: 16px;
+    text-align: center;
+    max-width: 320px;
+    box-shadow: 0 4px 20px rgba(255,204,102,0.6);
+  }
+  #dialog p {
+    font-size: 1.4em;
+    margin-bottom: 1.2em;
+  }
+  #dialog button {
+    background: linear-gradient(180deg, #ff7b9a, #ff4f7a);
+    border: none;
+    border-radius: 9999px;
+    padding: 0.7em 2.4em;
+    color: white;
+    font-weight: 700;
+    font-size: 1.2em;
+    cursor: pointer;
+    box-shadow: 0 6px 14px rgba(255,80,120,0.25);
+    transition: background 0.25s ease;
+  }
+  #dialog button:hover {
+    background: linear-gradient(180deg, #ff4f7a, #ff7b9a);
+  }
+  #final-message {
+    font-size: 1.5em;
+    margin-top: 1em;
+    color: #ffdfc1;
+    font-weight: 700;
+    text-shadow: 0 0 10px #ffb677;
+  }
+  /* Stars */
+  #stars {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
   }
 </style>
 </head>
 <body>
-  <div id="gameWrap">
-    <h1>✨ Lantern Catch — Happy Birthday, Zainul ✨</h1>
-    <div id="hud">
-      <div id="messageBar">Spell: <span id="lettersNeeded"></span></div>
-      <div id="scoreBar">Caught: <span id="caught">0</span>/<span id="total">0</span></div>
-    </div>
-
+  <div id="game-container">
+    <div id="hud">Spell: <span id="next-letter"></span></div>
     <canvas id="game" width="480" height="640"></canvas>
-
-    <div id="howto">Controls: ← / → to move • Or drag the basket with mouse/touch • Catch lanterns in order</div>
-    <footer>Save this file and open it in your browser. You can swap lantern SVGs if you want different visuals.</footer>
   </div>
 
-  <!-- Overlay dialog -->
-  <div id="overlay">
+  <div id="overlay" role="dialog" aria-modal="true" aria-labelledby="dialog-text">
     <div id="dialog">
-      <p id="dialogText">Do you love Foumi?</p>
-      <button class="btn" id="yesBtn">YES</button>
-      <p id="finalText" style="display:none; margin-top:12px;">Foumi loves you most &lt;3</p>
+      <p id="dialog-text">Do you love Foumi?</p>
+      <button id="yes-button">YES</button>
+      <div id="final-message" hidden>Foumi loves you most &lt;3</div>
     </div>
   </div>
+
+  <canvas id="stars"></canvas>
 
 <script>
-/*
-  Lantern Catch Game
-  - letters of the message appear inside lanterns that float downward
-  - player controls a basket and must catch letters in the correct sequence
-  - uses inline SVG drawing for lanterns (no external images)
-*/
+(() => {
+  const MESSAGE = "HAPPY BIRTHDAY ZAINUL";
+  const LETTERS = MESSAGE.split('');
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const starsCanvas = document.getElementById('stars');
+  const starsCtx = starsCanvas.getContext('2d');
+  const nextLetterEl = document.getElementById('next-letter');
+  const overlay = document.getElementById('overlay');
+  const dialogText = document.getElementById('dialog-text');
+  const yesButton = document.getElementById('yes-button');
+  const finalMessage = document.getElementById('final-message');
 
-const MESSAGE = "HAPPY BIRTHDAY ZAINUL".split(''); // letters and spaces
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-let W = canvas.width, H = canvas.height;
+  const W = canvas.width;
+  const H = canvas.height;
 
-// HUD
-const lettersNeededEl = document.getElementById('lettersNeeded');
-const caughtEl = document.getElementById('caught');
-const totalEl = document.getElementById('total');
+  let basket = {
+    x: W/2 - 60,
+    y: H - 60,
+    width: 120,
+    height: 28,
+    speed: 8,
+    vx: 0
+  };
 
-let nextIndex = 0;           // next letter index to catch
-let caughtCount = 0;
-totalEl.textContent = MESSAGE.filter(c=>c!==' ').length;
-updateHUD();
+  // Lantern properties
+  const lanternRadius = 28;
+  const lanternSpeed = 1.6; // pixels per frame
 
-function updateHUD(){
-  // show remaining letters (replace spaces with small gaps)
-  const display = MESSAGE.map((c,i)=> i<nextIndex ? '<span style="opacity:.25">'+c+'</span>' : c).join('');
-  lettersNeededEl.innerHTML = display.replace(/ /g,'&nbsp;');
-  caughtEl.textContent = caughtCount;
-}
+  // Current lantern
+  let lantern = null;
 
-// Player (basket)
-const player = {
-  w: 120,
-  h: 28,
-  x: (W - 120) / 2,
-  y: H - 70,
-  vx: 0
-};
+  // Letter index we want to catch next
+  let nextIndex = 0;
 
-// Lantern prototype
-class Lantern {
-  constructor(letter, x, y, speed){
-    this.letter = letter;
-    this.x = x;
-    this.y = y;
-    this.r = 28; // visual radius
-    this.speed = speed;
-    // gentle sway
-    this.sway = Math.random()*0.6 + 0.4;
-    this.phase = Math.random()*Math.PI*2;
-  }
-  update(dt){
-    this.y += this.speed * dt;
-    this.phase += 0.01 * this.sway * dt;
-    // sway horizontally
-    this.x += Math.sin(this.phase) * 0.3 * (dt/16);
-  }
-  draw(ctx){
-    // draw a stylized lantern via canvas shapes (simple)
-    ctx.save();
-    ctx.translate(this.x, this.y);
+  // Stars for background
+  const starsCount = 80;
+  let stars = [];
 
-    // shadow string
-    ctx.beginPath();
-    ctx.moveTo(0, -36);
-    ctx.lineTo(0, -18);
-    ctx.strokeStyle = "rgba(255,255,255,0.08)";
-    ctx.lineWidth = 1;
-    ctx.stroke();
+  // Confetti particles
+  let confetti = [];
 
-    // lantern body
-    const grad = ctx.createLinearGradient(-20,-12,20,12);
-    grad.addColorStop(0,'#ffd29e');
-    grad.addColorStop(0.5,'#ffb677');
-    grad.addColorStop(1,'#ff8b3c');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.ellipse(0,0,22,28,0,0,Math.PI*2);
-    ctx.fill();
-    // ribs
-    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
-    ctx.lineWidth = 1;
-    for(let i=-12;i<=12;i+=6){
-      ctx.beginPath();
-      ctx.moveTo(i,-22);
-      ctx.lineTo(i,22);
-      ctx.stroke();
-    }
-    // bottom tassel
-    ctx.fillStyle = '#ff7b9a';
-    ctx.fillRect(-6,22,12,6);
-    ctx.beginPath();
-    ctx.moveTo(-6,28); ctx.lineTo(0,36); ctx.lineTo(6,28);
-    ctx.fill();
-
-    // letter
-    ctx.fillStyle = '#2b1a00';
-    ctx.font = '18px bold sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(this.letter, 0, 0);
-
-    ctx.restore();
-  }
-}
-
-// active lanterns array
-let lanterns = [];
-let spawnTimer = 0;
-let spawnInterval = 1000; // ms
-
-// game loop time
-let last = performance.now();
-let running = true;
-let animationId = null;
-
-// spawn logic: spawn only letters that are still uncaught (including duplicates if spaces)
-function spawnLetter() {
-  // choose any letter that is not yet caught OR (to keep it fun) occasionally spawn near-future letters as distractors
-  const remaining = [];
-  for (let i = 0; i < MESSAGE.length; i++) {
-    if (MESSAGE[i] === ' ') continue;
-    if (i >= nextIndex) remaining.push({idx:i, letter: MESSAGE[i]});
-  }
-  if (remaining.length === 0) return;
-  // sometimes spawn the correct next letter, otherwise spawn a random future letter as distractor
-  const chance = Math.random();
-  let pick;
-  if (chance < 0.6) {
-    // spawn the correct next letter
-    pick = remaining.find(r => r.idx === nextIndex);
-  } else {
-    // spawn random remaining
-    pick = remaining[Math.floor(Math.random()*remaining.length)];
-  }
-  // screen x random within bounds
-  const margin = 40;
-  const x = margin + Math.random() * (W - margin*2);
-  const speed = 0.02 + Math.random()*0.06; // pixels per ms
-  lanterns.push(new Lantern(pick.letter, x, -40, speed));
-}
-
-// collision detect basket catches
-function checkCatches() {
-  for (let i = lanterns.length-1; i >= 0; i--) {
-    const l = lanterns[i];
-    // simple circle-rect collision
-    const closestX = Math.max(player.x, Math.min(l.x, player.x + player.w));
-    const closestY = Math.max(player.y, Math.min(l.y, player.y + player.h));
-    const dx = l.x - closestX;
-    const dy = l.y - closestY;
-    const dist2 = dx*dx + dy*dy;
-    if (dist2 < (l.r+4)*(l.r+4)) {
-      // attempted catch
-      if (l.letter === MESSAGE[nextIndex]) {
-        // correct
-        nextIndex++;
-        caughtCount++;
-        updateHUD();
-        // small sparkle effect (just remove)
-        lanterns.splice(i,1);
-        if (nextIndex >= MESSAGE.length) {
-          // completed
-          win();
-        }
-      } else {
-        // incorrect catch - penalty: drop some progress (optional) or bounce away
-        // We'll bounce the lantern away and play a small shake
-        l.speed *= 0.6;
-        l.y = Math.min(l.y, player.y - 40);
-        // add a penalty visual: flash the HUD
-        flashHUD();
-        // slight delay: keep the lantern so it's not simply removed
-      }
+  function initStars() {
+    starsCanvas.width = window.innerWidth;
+    starsCanvas.height = window.innerHeight;
+    stars = [];
+    for(let i=0; i<starsCount; i++){
+      stars.push({
+        x: Math.random()*starsCanvas.width,
+        y: Math.random()*starsCanvas.height,
+        radius: Math.random()*1.5 + 0.3,
+        alpha: Math.random()*0.6 + 0.3,
+        delta: (Math.random() * 0.01) + 0.002
+      });
     }
   }
-}
 
-let hudFlashTimer = 0;
-function flashHUD() {
-  hudFlashTimer = 300; // ms
-}
-
-// win state
-function win() {
-  running = false;
-  showDialog();
-}
-
-// overlay dialog handling
-const overlay = document.getElementById('overlay');
-const yesBtn = document.getElementById('yesBtn');
-const dialogText = document.getElementById('dialogText');
-const finalText = document.getElementById('finalText');
-
-function showDialog() {
-  overlay.style.visibility = 'visible';
-  overlay.style.opacity = '1';
-  dialogText.textContent = 'Do you love Foumi?';
-  finalText.style.display = 'none';
-  yesBtn.style.display = 'inline-block';
-}
-
-yesBtn.addEventListener('click', () => {
-  dialogText.textContent = '';
-  yesBtn.style.display = 'none';
-  finalText.style.display = 'block';
-  // small confetti burst
-  confettiBurst();
-});
-
-// simple confetti (visual) — draw particles on top
-let confetti = [];
-function confettiBurst() {
-  for (let i=0;i<80;i++){
-    confetti.push({
-      x: W/2 + (Math.random()*200-100),
-      y: H/2 + (Math.random()*40-40),
-      vx: (Math.random()-0.5)*3,
-      vy: (Math.random()-3)*3,
-      color: `hsl(${Math.random()*60+10},80%,60%)`,
-      life: 1500 + Math.random()*800
+  function drawStars(){
+    starsCtx.clearRect(0,0,starsCanvas.width, starsCanvas.height);
+    stars.forEach(s => {
+      s.alpha += s.delta;
+      if(s.alpha > 1 || s.alpha < 0.3) s.delta = -s.delta;
+      starsCtx.beginPath();
+      starsCtx.arc(s.x, s.y, s.radius, 0, 2*Math.PI);
+      starsCtx.fillStyle = `rgba(255,255,255,${s.alpha.toFixed(2)})`;
+      starsCtx.fill();
     });
   }
-  // keep running draw for a bit
-  setTimeout(()=> {
-    // nothing
-  },2000);
-}
 
-// main render & update
-function loop(now){
-  const dt = Math.min(40, now - last); // cap delta
-  last = now;
-  // spawn
-  spawnTimer += dt;
-  if (spawnTimer > spawnInterval) {
-    spawnTimer = 0;
-    spawnLetter();
-    // gradually increase difficulty
-    if (spawnInterval > 500) spawnInterval -= 6;
+  // Create a new lantern object with letter and start x position
+  function spawnLantern(){
+    const letter = LETTERS[nextIndex];
+    const x = Math.random()*(W - lanternRadius*2) + lanternRadius;
+    lantern = {
+      x: x,
+      y: -lanternRadius*2,
+      letter: letter,
+      radius: lanternRadius,
+      caught: false
+    };
+    nextLetterEl.textContent = letter;
   }
 
-  // update lanterns
-  for (let i=lanterns.length-1; i>=0; i--){
-    lanterns[i].update(dt);
-    // remove if out of screen bottom
-    if (lanterns[i].y > H + 80) lanterns.splice(i,1);
-  }
+  // Draw lantern with letter on it (simple cartoon style)
+  function drawLantern(l){
+    const {x, y, radius, letter} = l;
 
-  // check catches
-  checkCatches();
+    // Lantern glow
+    const grad = ctx.createRadialGradient(x, y, radius*0.3, x, y, radius);
+    grad.addColorStop(0, 'rgba(255, 204, 102, 0.9)');
+    grad.addColorStop(1, 'rgba(255, 153, 51, 0.4)');
 
-  // player movement (inertialess)
-  player.x += player.vx * (dt/16);
-  // clamp
-  player.x = Math.max(8, Math.min(W - player.w - 8, player.x));
-
-  // draw
-  ctx.clearRect(0,0,W,H);
-  // background subtle stars
-  drawBackground();
-
-  // draw lanterns
-  for (const l of lanterns) l.draw(ctx);
-
-  // draw player basket
-  drawPlayer();
-
-  // confetti
-  drawConfetti(dt);
-
-  // HUD flash
-  if (hudFlashTimer>0){
-    hudFlashTimer -= dt;
-    document.getElementById('messageBar').style.boxShadow = '0 0 12px rgba(255,100,100,0.6)';
-  } else {
-    document.getElementById('messageBar').style.boxShadow = 'none';
-  }
-
-  if (running) animationId = requestAnimationFrame(loop);
-}
-function drawBackground(){
-  // gentle gradient sky already via CSS; add a moon and some far lantern glows
-  // moon
-  ctx.save();
-  ctx.globalAlpha = 0.16;
-  ctx.beginPath();
-  ctx.fillStyle = '#fff8c8';
-  ctx.arc(W-90,80,40,0,Math.PI*2);
-  ctx.fill();
-  ctx.restore();
-  // faint glowing lanterns in background
-  ctx.save();
-  ctx.globalAlpha = 0.06;
-  for (let i=0;i<12;i++){
+    ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.fillStyle = '#ffdd9a';
-    const bx = (i*83)%W + (i%2?20:0);
-    const by = (i*40)%H + 40;
-    ctx.ellipse(bx, by, 12, 18, 0, 0, Math.PI*2);
+    ctx.ellipse(x, y, radius*0.7, radius, 0, 0, 2*Math.PI);
+    ctx.fill();
+
+    // Lantern ribs (vertical lines)
+    ctx.strokeStyle = 'rgba(204, 153, 51, 0.7)';
+    ctx.lineWidth = 2;
+    for(let i=-3; i<=3; i++){
+      const lineX = x + (i * radius * 0.15);
+      ctx.beginPath();
+      ctx.moveTo(lineX, y - radius);
+      ctx.lineTo(lineX, y + radius);
+      ctx.stroke();
+    }
+
+    // Lantern bottom tassel
+    ctx.fillStyle = 'rgba(255, 153, 51, 0.9)';
+    ctx.beginPath();
+    ctx.moveTo(x - radius*0.3, y + radius*0.7);
+    ctx.lineTo(x, y + radius*1.2);
+    ctx.lineTo(x + radius*0.3, y + radius*0.7);
+    ctx.closePath();
+    ctx.fill();
+
+    // Letter on lantern
+    ctx.fillStyle = '#2b1a00';
+    ctx.font = '28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(letter, x, y);
+  }
+
+  // Draw basket (simple rectangle with rim)
+  function drawBasket(){
+    ctx.fillStyle = '#8b5e3c';
+    ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
+    ctx.fillStyle = '#a36b45';
+    ctx.fillRect(basket.x, basket.y - 6, basket.width, 8);
+
+    // Cloth inside basket
+    ctx.fillStyle = '#ffdfc1';
+    ctx.fillRect(basket.x + 8, basket.y + 4, basket.width - 16, 6);
+
+    // Basket shadow
+    ctx.beginPath();
+    ctx.ellipse(basket.x + basket.width/2, basket.y + basket.height + 8, basket.width/2, 8, 0, 0, 2*Math.PI);
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
     ctx.fill();
   }
-  ctx.restore();
-}
 
-function drawPlayer(){
-  // basket shadow
-  ctx.save();
-  ctx.beginPath();
-  ctx.ellipse(player.x + player.w/2, player.y + player.h + 6, player.w/2, 8, 0, 0, Math.PI*2);
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.fill();
-  ctx.restore();
-
-  // basket
-  ctx.save();
-  ctx.translate(player.x, player.y);
-  ctx.fillStyle = '#8b5e3c';
-  ctx.fillRect(0,0,player.w,player.h);
-  // top rim
-  ctx.fillStyle = '#a36b45';
-  ctx.fillRect(0, -6, player.w, 8);
-  // little cloth inside
-  ctx.fillStyle = '#ffdfc1';
-  ctx.fillRect(8, 4, player.w-16, 6);
-  ctx.restore();
-}
-
-function drawConfetti(dt){
-  for (let i = confetti.length-1; i>=0; i--){
-    const p = confetti[i];
-    ctx.save();
-    ctx.globalAlpha = Math.max(0, p.life/1800);
-    ctx.fillStyle = p.color;
-    ctx.fillRect(p.x, p.y, 6, 10);
-    ctx.restore();
-    p.x += p.vx * (dt/16);
-    p.y += p.vy * (dt/16);
-    p.vy += 0.08 * (dt/16);
-    p.life -= dt;
-    if (p.life <= 0) confetti.splice(i,1);
+  // Check if basket caught the lantern (simple rectangle-circle collision)
+  function checkCatch(){
+    if(!lantern) return false;
+    const closestX = Math.max(basket.x, Math.min(lantern.x, basket.x + basket.width));
+    const closestY = Math.max(basket.y, Math.min(lantern.y, basket.y + basket.height));
+    const dx = lantern.x - closestX;
+    const dy = lantern.y - closestY;
+    const distance = Math.sqrt(dx*dx + dy*dy);
+    return distance < lantern.radius + 4;
   }
-}
 
-// controls
-window.addEventListener('keydown', (e)=>{
-  if (e.key === 'ArrowLeft') player.vx = -6;
-  if (e.key === 'ArrowRight') player.vx = 6;
-  if (e.key === ' ' && !running) {
-    // restart if finished and space pressed
-    restartGame();
+  // Confetti particles
+  let confettiParticles = [];
+  function createConfetti(){
+    for(let i=0; i<50; i++){
+      confettiParticles.push({
+        x: W/2 + (Math.random()*200-100),
+        y: H/2 + (Math.random()*40-40),
+        vx: (Math.random()-0.5)*4,
+        vy: (Math.random()*-3)-2,
+        size: Math.random()*6 + 4,
+        life: 1500 + Math.random()*1000,
+        color: `hsl(${Math.random()*60+30}, 80%, 60%)`
+      });
+    }
   }
-});
-window.addEventListener('keyup', (e)=>{
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') player.vx = 0;
-});
+  function drawConfetti(dt){
+    confettiParticles = confettiParticles.filter(p => p.life > 0);
+    confettiParticles.forEach(p => {
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x, p.y, p.size, p.size*0.5);
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.1;
+      p.life -= dt;
+    });
+  }
 
-// mouse / touch drag
-let dragging = false;
-canvas.addEventListener('mousedown', (ev)=>{
-  const rect = canvas.getBoundingClientRect();
-  const mx = ev.clientX - rect.left;
-  const my = ev.clientY - rect.top;
-  if (my > player.y - 40) { dragging = true; dragOffset = mx - player.x; canvas.style.cursor = 'grabbing'; }
-});
-let dragOffset = 0;
-window.addEventListener('mousemove', (ev)=>{
-  if (!dragging) return;
-  const rect = canvas.getBoundingClientRect();
-  const mx = ev.clientX - rect.left;
-  player.x = mx - dragOffset;
-});
-window.addEventListener('mouseup', ()=> { dragging=false; canvas.style.cursor=''; });
+  // Game variables
+  let lastTime = 0;
+  let lanternSpeedY = lanternSpeed;
+  let running = true;
 
-// touch support
-canvas.addEventListener('touchstart', (ev)=>{
-  const rect = canvas.getBoundingClientRect();
-  const t = ev.touches[0];
-  const mx = t.clientX - rect.left;
-  const my = t.clientY - rect.top;
-  if (my > player.y - 40) { dragging = true; dragOffset = mx - player.x; }
-});
-window.addEventListener('touchmove', (ev)=>{
-  if (!dragging) return;
-  ev.preventDefault();
-  const rect = canvas.getBoundingClientRect();
-  const t = ev.touches[0];
-  const mx = t.clientX - rect.left;
-  player.x = mx - dragOffset;
-}, {passive:false});
-window.addEventListener('touchend', ()=> dragging = false);
+  // Controls
+  let keys = {};
+  window.addEventListener('keydown', e => {
+    keys[e.key] = true;
+  });
+  window.addEventListener('keyup', e => {
+    keys[e.key] = false;
+  });
 
-// restart function
-function restartGame(){
-  // reset
-  overlay.style.visibility='hidden';
-  overlay.style.opacity='0';
-  lanterns = [];
-  nextIndex = 0;
-  caughtCount = 0;
-  spawnTimer = 0;
-  spawnInterval = 1000;
-  running = true;
-  last = performance.now();
-  updateHUD();
-  if (!animationId) animationId = requestAnimationFrame(loop);
-}
+  // Touch drag support
+  let dragging = false;
+  let dragOffsetX = 0;
+  canvas.addEventListener('mousedown', e => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    if(my > basket.y - 40 && mx > basket.x && mx < basket.x + basket.width){
+      dragging = true;
+      dragOffsetX = mx - basket.x;
+      canvas.style.cursor = 'grabbing';
+    }
+  });
+  window.addEventListener('mousemove', e => {
+    if(dragging){
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      basket.x = mx - dragOffsetX;
+      if(basket.x < 0) basket.x = 0;
+      if(basket.x > W - basket.width) basket.x = W - basket.width;
+    }
+  });
+  window.addEventListener('mouseup', e => {
+    dragging = false;
+    canvas.style.cursor = '';
+  });
+  canvas.addEventListener('touchstart', e => {
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches[0];
+    const mx = t.clientX - rect.left;
+    const my = t.clientY - rect.top;
+    if(my > basket.y - 40 && mx > basket.x && mx < basket.x + basket.width){
+      dragging = true;
+      dragOffsetX = mx - basket.x;
+    }
+  }, {passive:false});
+  window.addEventListener('touchmove', e => {
+    if(dragging){
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const t = e.touches[0];
+      const mx = t.clientX - rect.left;
+      basket.x = mx - dragOffsetX;
+      if(basket.x < 0) basket.x = 0;
+      if(basket.x > W - basket.width) basket.x = W - basket.width;
+    }
+  }, {passive:false});
+  window.addEventListener('touchend', e => {
+    dragging = false;
+  });
 
-// initial values
-updateHUD();
-animationId = requestAnimationFrame(loop);
+  // Show overlay with dialog
+  function showOverlay(){
+    overlay.style.visibility = 'visible';
+    overlay.style.opacity = '1';
+  }
+  // Hide overlay
+  function hideOverlay(){
+    overlay.style.visibility = 'hidden';
+    overlay.style.opacity = '0';
+  }
 
-// helpful: resize canvas if container changes (keeps logical size)
-window.addEventListener('resize', ()=> {
-  // nothing — we keep fixed internal resolution for predictable gameplay
-});
+  yesButton.onclick = () => {
+    dialogText.textContent = '';
+    yesButton.style.display = 'none';
+    finalMessage.hidden = false;
+    createConfetti();
+  };
 
+  // Spawn first lantern
+  spawnLantern();
+
+  // Game loop
+  function gameLoop(timestamp){
+    if(!lastTime) lastTime = timestamp;
+    const dt = timestamp - lastTime;
+    lastTime = timestamp;
+
+    // Move basket
+    if(keys['ArrowLeft']) basket.x -= basket.speed;
+    if(keys['ArrowRight']) basket.x += basket.speed;
+    if(basket.x < 0) basket.x = 0;
+    if(basket.x > W - basket.width) basket.x = W - basket.width;
+
+    // Move lantern down
+    if(lantern){
+      lantern.y += lanternSpeedY;
+
+      // Check catch
+      if(checkCatch()){
+        nextIndex++;
+        if(nextIndex >= LETTERS.length){
+          lantern = null;
+          running = false;
+          showOverlay();
+        } else {
+          spawnLantern();
+        }
+      } else if(lantern.y - lantern.radius > H){
+        // Missed lantern, retry same letter by respawning
+        spawnLantern();
+      }
+    }
+
+    // Clear canvas
+    ctx.clearRect(0,0,W,H);
+
+    // Draw stars
+    drawStars();
+
+    // Draw lantern
+    if(lantern) drawLantern(lantern);
+
+    // Draw basket
+    drawBasket();
+
+    // Draw confetti
+    drawConfetti(dt);
+
+    // Update HUD letter
+    nextLetterEl.textContent = LETTERS[nextIndex] || '';
+
+    if(running) requestAnimationFrame(gameLoop);
+  }
+
+  // Resize stars canvas to cover full viewport
+  function resizeStars(){
+    starsCanvas.width = window.innerWidth;
+    starsCanvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', () => {
+    resizeStars();
+    initStars();
+  });
+  resizeStars();
+  initStars();
+
+  requestAnimationFrame(gameLoop);
+})();
 </script>
 </body>
 </html>
