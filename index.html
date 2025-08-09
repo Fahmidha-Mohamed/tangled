@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Lantern Catch - Happy Birthday Zainul</title>
+<title>Bee Letter Catch - Happy Birthday Zainul</title>
 <style>
   * { margin:0; padding:0; box-sizing: border-box; }
   body, html {
@@ -152,18 +152,18 @@
     vx: 0
   };
 
-  // Lantern image (simple cartoon Tangled style)
-  const lanternImg = new Image();
-  lanternImg.src = 'https://i.imgur.com/RMC8Dy0.png'; // cartoon Tangled lantern (transparent bg)
+  // Bee image (simple cartoon bee)
+  const beeImg = new Image();
+  beeImg.src = 'https://i.imgur.com/OW3ijcr.png'; // cartoon bee with transparent bg
 
-  // Lantern properties
-  const lanternRadius = 28;
+  // Bee properties
+  const beeRadius = 28;
 
   // Speed faster
-  const lanternSpeed = 2.6;
+  const beeSpeed = 2.6;
 
-  // Current lantern
-  let lantern = null;
+  // Current bee (carries letter)
+  let bee = null;
 
   // Letter index we want to catch next
   let nextIndex = 0;
@@ -322,30 +322,30 @@
     }
   }
 
-  // Create a new lantern object with letter and start x position
-  function spawnLantern(){
+  // Create a new bee object with letter and start x position
+  function spawnBee(){
     const letter = LETTERS[nextIndex];
-    const x = Math.random()*(W - lanternRadius*2) + lanternRadius;
-    lantern = {
+    const x = Math.random()*(W - beeRadius*2) + beeRadius;
+    bee = {
       x: x,
-      y: -lanternRadius*2,
+      y: -beeRadius*2,
       letter: letter,
-      radius: lanternRadius,
+      radius: beeRadius,
       caught: false
     };
     nextLetterEl.textContent = letter;
   }
 
-  // Draw lantern image with letter on it
-  function drawLantern(l){
-    ctx.drawImage(lanternImg, l.x - lanternRadius, l.y - lanternRadius, lanternRadius*2, lanternRadius*2);
+  // Draw bee image with letter on it
+  function drawBee(b){
+    ctx.drawImage(beeImg, b.x - beeRadius, b.y - beeRadius, beeRadius*2, beeRadius*2);
 
-    // Letter on lantern
+    // Letter on bee
     ctx.fillStyle = '#3b2a00';
     ctx.font = '28px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(l.letter, l.x, l.y + 4);
+    ctx.fillText(b.letter, b.x, b.y + 4);
   }
 
   // Draw basket (simple rectangle with rim)
@@ -366,15 +366,15 @@
     ctx.fill();
   }
 
-  // Check if basket caught the lantern (rectangle-circle collision)
+  // Check if basket caught the bee (rectangle-circle collision)
   function checkCatch(){
-    if(!lantern) return false;
-    const closestX = Math.max(basket.x, Math.min(lantern.x, basket.x + basket.width));
-    const closestY = Math.max(basket.y, Math.min(lantern.y, basket.y + basket.height));
-    const dx = lantern.x - closestX;
-    const dy = lantern.y - closestY;
+    if(!bee) return false;
+    const closestX = Math.max(basket.x, Math.min(bee.x, basket.x + basket.width));
+    const closestY = Math.max(basket.y, Math.min(bee.y, basket.y + basket.height));
+    const dx = bee.x - closestX;
+    const dy = bee.y - closestY;
     const distance = Math.sqrt(dx*dx + dy*dy);
-    return distance < lantern.radius + 4;
+    return distance < bee.radius + 4;
   }
 
   // Controls and game variables
@@ -411,15 +411,15 @@
     if(basket.x < 0) basket.x = 0;
     if(basket.x > W - basket.width) basket.x = W - basket.width;
 
-    // Move lantern down
-    if(lantern && running){
-      lantern.y += lanternSpeed;
+    // Move bee down
+    if(bee && running){
+      bee.y += beeSpeed;
 
       // Check catch
       if(checkCatch()){
         nextIndex++;
         if(nextIndex >= LETTERS.length){
-          lantern = null;
+          bee = null;
           running = false;
           // Show birthday + fireworks first
           birthdayText.style.display = 'block';
@@ -441,11 +441,11 @@
             showOverlay();
           }, 4000);
         } else {
-          spawnLantern();
+          spawnBee();
         }
-      } else if(lantern.y - lantern.radius > H){
-        // Missed lantern, retry same letter by respawning
-        spawnLantern();
+      } else if(bee.y - bee.radius > H){
+        // Missed bee, retry same letter by respawning
+        spawnBee();
       }
     }
 
@@ -455,13 +455,13 @@
     // Draw stars
     drawStars();
 
-    // Draw lantern
-    if(lantern) drawLantern(lantern);
+    // Draw bee
+    if(bee) drawBee(bee);
 
     // Draw basket
     drawBasket();
 
-    // Draw fireworks
+    // Draw fireworks only after message complete
     if(!running){
       fwCtx.clearRect(0,0,fwWidth, fwHeight);
       fireworks.forEach(fw => {
@@ -501,7 +501,7 @@
   resizeCanvases();
   initStars();
 
-  spawnLantern();
+  spawnBee();
   requestAnimationFrame(gameLoop);
 })();
 </script>
