@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Lantern Catch - Happy Birthday Zainul</title>
 <style>
-  /* Reset & basics */
   * { margin:0; padding:0; box-sizing: border-box; }
   body, html {
     height: 100%;
@@ -39,7 +38,7 @@
   #overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.8);
+    background: rgba(0,0,0,0.85);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -47,6 +46,7 @@
     opacity: 0;
     transition: opacity 0.3s ease;
     z-index: 10;
+    flex-direction: column;
   }
   #dialog {
     background: #1a2136;
@@ -76,13 +76,25 @@
     background: linear-gradient(180deg, #ff4f7a, #ff7b9a);
   }
   #final-message {
-    font-size: 1.5em;
+    font-size: 1.8em;
     margin-top: 1em;
     color: #ffdfc1;
     font-weight: 700;
-    text-shadow: 0 0 10px #ffb677;
+    text-shadow: 0 0 20px #ffb677;
   }
-  /* Stars */
+  #birthday-text {
+    font-size: 2.4em;
+    font-weight: 900;
+    color: #ffdd88;
+    text-shadow:
+      0 0 10px #ffb600,
+      0 0 20px #ffb600,
+      0 0 30px #ffb600,
+      0 0 40px #ffb600,
+      0 0 50px #ffb600,
+      0 0 60px #ffb600;
+    margin-bottom: 1.2em;
+  }
   #stars {
     position: fixed;
     inset: 0;
@@ -98,11 +110,13 @@
   </div>
 
   <div id="overlay" role="dialog" aria-modal="true" aria-labelledby="dialog-text">
-    <div id="dialog">
+    <div id="dialog" style="display:none;">
       <p id="dialog-text">Do you love Foumi?</p>
       <button id="yes-button">YES</button>
       <div id="final-message" hidden>Foumi loves you most &lt;3</div>
     </div>
+    <div id="birthday-text" style="display:none;">HAPPY BIRTHDAYY ZAINUL</div>
+    <canvas id="fireworks" width="480" height="200" style="border-radius: 12px;"></canvas>
   </div>
 
   <canvas id="stars"></canvas>
@@ -117,25 +131,36 @@
   const starsCtx = starsCanvas.getContext('2d');
   const nextLetterEl = document.getElementById('next-letter');
   const overlay = document.getElementById('overlay');
+  const dialog = document.getElementById('dialog');
   const dialogText = document.getElementById('dialog-text');
   const yesButton = document.getElementById('yes-button');
   const finalMessage = document.getElementById('final-message');
+  const birthdayText = document.getElementById('birthday-text');
+  const fireworksCanvas = document.getElementById('fireworks');
+  const fwCtx = fireworksCanvas.getContext('2d');
 
   const W = canvas.width;
   const H = canvas.height;
 
+  // Basket
   let basket = {
     x: W/2 - 60,
     y: H - 60,
     width: 120,
     height: 28,
-    speed: 8,
+    speed: 10,
     vx: 0
   };
 
+  // Lantern image (simple cartoon Tangled style)
+  const lanternImg = new Image();
+  lanternImg.src = 'https://i.imgur.com/RMC8Dy0.png'; // cartoon Tangled lantern (transparent bg)
+
   // Lantern properties
   const lanternRadius = 28;
-  const lanternSpeed = 1.6; // pixels per frame
+
+  // Speed faster
+  const lanternSpeed = 2.6;
 
   // Current lantern
   let lantern = null;
@@ -147,152 +172,10 @@
   const starsCount = 80;
   let stars = [];
 
-  // Confetti particles
-  let confetti = [];
-
-  function initStars() {
-    starsCanvas.width = window.innerWidth;
-    starsCanvas.height = window.innerHeight;
-    stars = [];
-    for(let i=0; i<starsCount; i++){
-      stars.push({
-        x: Math.random()*starsCanvas.width,
-        y: Math.random()*starsCanvas.height,
-        radius: Math.random()*1.5 + 0.3,
-        alpha: Math.random()*0.6 + 0.3,
-        delta: (Math.random() * 0.01) + 0.002
-      });
-    }
-  }
-
-  function drawStars(){
-    starsCtx.clearRect(0,0,starsCanvas.width, starsCanvas.height);
-    stars.forEach(s => {
-      s.alpha += s.delta;
-      if(s.alpha > 1 || s.alpha < 0.3) s.delta = -s.delta;
-      starsCtx.beginPath();
-      starsCtx.arc(s.x, s.y, s.radius, 0, 2*Math.PI);
-      starsCtx.fillStyle = `rgba(255,255,255,${s.alpha.toFixed(2)})`;
-      starsCtx.fill();
-    });
-  }
-
-  // Create a new lantern object with letter and start x position
-  function spawnLantern(){
-    const letter = LETTERS[nextIndex];
-    const x = Math.random()*(W - lanternRadius*2) + lanternRadius;
-    lantern = {
-      x: x,
-      y: -lanternRadius*2,
-      letter: letter,
-      radius: lanternRadius,
-      caught: false
-    };
-    nextLetterEl.textContent = letter;
-  }
-
-  // Draw lantern with letter on it (simple cartoon style)
-  function drawLantern(l){
-    const {x, y, radius, letter} = l;
-
-    // Lantern glow
-    const grad = ctx.createRadialGradient(x, y, radius*0.3, x, y, radius);
-    grad.addColorStop(0, 'rgba(255, 204, 102, 0.9)');
-    grad.addColorStop(1, 'rgba(255, 153, 51, 0.4)');
-
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.ellipse(x, y, radius*0.7, radius, 0, 0, 2*Math.PI);
-    ctx.fill();
-
-    // Lantern ribs (vertical lines)
-    ctx.strokeStyle = 'rgba(204, 153, 51, 0.7)';
-    ctx.lineWidth = 2;
-    for(let i=-3; i<=3; i++){
-      const lineX = x + (i * radius * 0.15);
-      ctx.beginPath();
-      ctx.moveTo(lineX, y - radius);
-      ctx.lineTo(lineX, y + radius);
-      ctx.stroke();
-    }
-
-    // Lantern bottom tassel
-    ctx.fillStyle = 'rgba(255, 153, 51, 0.9)';
-    ctx.beginPath();
-    ctx.moveTo(x - radius*0.3, y + radius*0.7);
-    ctx.lineTo(x, y + radius*1.2);
-    ctx.lineTo(x + radius*0.3, y + radius*0.7);
-    ctx.closePath();
-    ctx.fill();
-
-    // Letter on lantern
-    ctx.fillStyle = '#2b1a00';
-    ctx.font = '28px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(letter, x, y);
-  }
-
-  // Draw basket (simple rectangle with rim)
-  function drawBasket(){
-    ctx.fillStyle = '#8b5e3c';
-    ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
-    ctx.fillStyle = '#a36b45';
-    ctx.fillRect(basket.x, basket.y - 6, basket.width, 8);
-
-    // Cloth inside basket
-    ctx.fillStyle = '#ffdfc1';
-    ctx.fillRect(basket.x + 8, basket.y + 4, basket.width - 16, 6);
-
-    // Basket shadow
-    ctx.beginPath();
-    ctx.ellipse(basket.x + basket.width/2, basket.y + basket.height + 8, basket.width/2, 8, 0, 0, 2*Math.PI);
-    ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.fill();
-  }
-
-  // Check if basket caught the lantern (simple rectangle-circle collision)
-  function checkCatch(){
-    if(!lantern) return false;
-    const closestX = Math.max(basket.x, Math.min(lantern.x, basket.x + basket.width));
-    const closestY = Math.max(basket.y, Math.min(lantern.y, basket.y + basket.height));
-    const dx = lantern.x - closestX;
-    const dy = lantern.y - closestY;
-    const distance = Math.sqrt(dx*dx + dy*dy);
-    return distance < lantern.radius + 4;
-  }
-
-  // Confetti particles
-  let confettiParticles = [];
-  function createConfetti(){
-    for(let i=0; i<50; i++){
-      confettiParticles.push({
-        x: W/2 + (Math.random()*200-100),
-        y: H/2 + (Math.random()*40-40),
-        vx: (Math.random()-0.5)*4,
-        vy: (Math.random()*-3)-2,
-        size: Math.random()*6 + 4,
-        life: 1500 + Math.random()*1000,
-        color: `hsl(${Math.random()*60+30}, 80%, 60%)`
-      });
-    }
-  }
-  function drawConfetti(dt){
-    confettiParticles = confettiParticles.filter(p => p.life > 0);
-    confettiParticles.forEach(p => {
-      ctx.fillStyle = p.color;
-      ctx.fillRect(p.x, p.y, p.size, p.size*0.5);
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vy += 0.1;
-      p.life -= dt;
-    });
-  }
-
-  // Game variables
-  let lastTime = 0;
-  let lanternSpeedY = lanternSpeed;
-  let running = true;
+  // Fireworks vars
+  const fwWidth = fireworksCanvas.width;
+  const fwHeight = fireworksCanvas.height;
+  let fwParticles = [];
 
   // Controls
   let keys = {};
@@ -303,7 +186,7 @@
     keys[e.key] = false;
   });
 
-  // Touch drag support
+  // Touch drag support for basket
   let dragging = false;
   let dragOffsetX = 0;
   canvas.addEventListener('mousedown', e => {
@@ -354,6 +237,150 @@
     dragging = false;
   });
 
+  // Stars init and draw
+  function initStars() {
+    starsCanvas.width = window.innerWidth;
+    starsCanvas.height = window.innerHeight;
+    stars = [];
+    for(let i=0; i<starsCount; i++){
+      stars.push({
+        x: Math.random()*starsCanvas.width,
+        y: Math.random()*starsCanvas.height,
+        radius: Math.random()*1.5 + 0.3,
+        alpha: Math.random()*0.6 + 0.3,
+        delta: (Math.random() * 0.01) + 0.002
+      });
+    }
+  }
+  function drawStars(){
+    starsCtx.clearRect(0,0,starsCanvas.width, starsCanvas.height);
+    stars.forEach(s => {
+      s.alpha += s.delta;
+      if(s.alpha > 1 || s.alpha < 0.3) s.delta = -s.delta;
+      starsCtx.beginPath();
+      starsCtx.arc(s.x, s.y, s.radius, 0, 2*Math.PI);
+      starsCtx.fillStyle = `rgba(255,255,255,${s.alpha.toFixed(2)})`;
+      starsCtx.fill();
+    });
+  }
+
+  // Fireworks particle system
+  class Firework {
+    constructor(x,y,color){
+      this.x = x;
+      this.y = y;
+      this.color = color;
+      this.particles = [];
+      this.createParticles();
+    }
+    createParticles(){
+      for(let i=0; i<40; i++){
+        this.particles.push({
+          x: this.x,
+          y: this.y,
+          vx: Math.cos(i*(Math.PI*2/40))* (Math.random()*4 + 2),
+          vy: Math.sin(i*(Math.PI*2/40))* (Math.random()*4 + 2),
+          life: 1500 + Math.random()*1000,
+          size: Math.random()*3 + 2,
+          alpha: 1
+        });
+      }
+    }
+    update(dt){
+      this.particles = this.particles.filter(p => p.life > 0);
+      this.particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.1;
+        p.life -= dt;
+        p.alpha = p.life / 1500;
+      });
+    }
+    draw(ctx){
+      this.particles.forEach(p => {
+        ctx.fillStyle = `rgba(${this.color},${p.alpha.toFixed(2)})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, 2*Math.PI);
+        ctx.fill();
+      });
+    }
+    isDone(){
+      return this.particles.length === 0;
+    }
+  }
+
+  let fireworks = [];
+
+  // Create multiple fireworks at random positions
+  function launchFireworks(){
+    for(let i=0; i<6; i++){
+      fireworks.push(new Firework(
+        Math.random()*fwWidth,
+        Math.random()*fwHeight*0.6 + fwHeight*0.2,
+        `255,${Math.floor(Math.random()*200+50)},${Math.floor(Math.random()*50)}`
+      ));
+    }
+  }
+
+  // Create a new lantern object with letter and start x position
+  function spawnLantern(){
+    const letter = LETTERS[nextIndex];
+    const x = Math.random()*(W - lanternRadius*2) + lanternRadius;
+    lantern = {
+      x: x,
+      y: -lanternRadius*2,
+      letter: letter,
+      radius: lanternRadius,
+      caught: false
+    };
+    nextLetterEl.textContent = letter;
+  }
+
+  // Draw lantern image with letter on it
+  function drawLantern(l){
+    ctx.drawImage(lanternImg, l.x - lanternRadius, l.y - lanternRadius, lanternRadius*2, lanternRadius*2);
+
+    // Letter on lantern
+    ctx.fillStyle = '#3b2a00';
+    ctx.font = '28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(l.letter, l.x, l.y + 4);
+  }
+
+  // Draw basket (simple rectangle with rim)
+  function drawBasket(){
+    ctx.fillStyle = '#8b5e3c';
+    ctx.fillRect(basket.x, basket.y, basket.width, basket.height);
+    ctx.fillStyle = '#a36b45';
+    ctx.fillRect(basket.x, basket.y - 6, basket.width, 8);
+
+    // Cloth inside basket
+    ctx.fillStyle = '#ffdfc1';
+    ctx.fillRect(basket.x + 8, basket.y + 4, basket.width - 16, 6);
+
+    // Basket shadow
+    ctx.beginPath();
+    ctx.ellipse(basket.x + basket.width/2, basket.y + basket.height + 8, basket.width/2, 8, 0, 0, 2*Math.PI);
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fill();
+  }
+
+  // Check if basket caught the lantern (rectangle-circle collision)
+  function checkCatch(){
+    if(!lantern) return false;
+    const closestX = Math.max(basket.x, Math.min(lantern.x, basket.x + basket.width));
+    const closestY = Math.max(basket.y, Math.min(lantern.y, basket.y + basket.height));
+    const dx = lantern.x - closestX;
+    const dy = lantern.y - closestY;
+    const distance = Math.sqrt(dx*dx + dy*dy);
+    return distance < lantern.radius + 4;
+  }
+
+  // Controls and game variables
+  let lastTime = 0;
+  let running = true;
+
   // Show overlay with dialog
   function showOverlay(){
     overlay.style.visibility = 'visible';
@@ -365,15 +392,12 @@
     overlay.style.opacity = '0';
   }
 
+  // Handle YES button click
   yesButton.onclick = () => {
     dialogText.textContent = '';
     yesButton.style.display = 'none';
     finalMessage.hidden = false;
-    createConfetti();
   };
-
-  // Spawn first lantern
-  spawnLantern();
 
   // Game loop
   function gameLoop(timestamp){
@@ -388,8 +412,8 @@
     if(basket.x > W - basket.width) basket.x = W - basket.width;
 
     // Move lantern down
-    if(lantern){
-      lantern.y += lanternSpeedY;
+    if(lantern && running){
+      lantern.y += lanternSpeed;
 
       // Check catch
       if(checkCatch()){
@@ -397,7 +421,25 @@
         if(nextIndex >= LETTERS.length){
           lantern = null;
           running = false;
-          showOverlay();
+          // Show birthday + fireworks first
+          birthdayText.style.display = 'block';
+          fireworksCanvas.style.display = 'block';
+          dialog.style.display = 'none';
+          finalMessage.hidden = true;
+          nextLetterEl.textContent = '';
+
+          launchFireworks();
+
+          // After 4 seconds show "Do you love Foumi?"
+          setTimeout(() => {
+            birthdayText.style.display = 'none';
+            fireworksCanvas.style.display = 'none';
+            dialog.style.display = 'block';
+            dialogText.textContent = 'Do you love Foumi?';
+            yesButton.style.display = 'inline-block';
+            finalMessage.hidden = true;
+            showOverlay();
+          }, 4000);
         } else {
           spawnLantern();
         }
@@ -419,27 +461,47 @@
     // Draw basket
     drawBasket();
 
-    // Draw confetti
-    drawConfetti(dt);
+    // Draw fireworks
+    if(!running){
+      fwCtx.clearRect(0,0,fwWidth, fwHeight);
+      fireworks.forEach(fw => {
+        fw.update(dt);
+        fw.draw(fwCtx);
+      });
+      fireworks = fireworks.filter(fw => !fw.isDone());
+
+      if(fireworks.length === 0){
+        // Relaunch fireworks every 1.5 sec if dialog not visible
+        if(dialog.style.display === 'none'){
+          launchFireworks();
+        }
+      }
+    }
 
     // Update HUD letter
-    nextLetterEl.textContent = LETTERS[nextIndex] || '';
+    if(running){
+      nextLetterEl.textContent = LETTERS[nextIndex];
+    }
 
     if(running) requestAnimationFrame(gameLoop);
   }
 
-  // Resize stars canvas to cover full viewport
-  function resizeStars(){
+  // Resize stars and fireworks canvas
+  function resizeCanvases(){
     starsCanvas.width = window.innerWidth;
     starsCanvas.height = window.innerHeight;
+
+    fireworksCanvas.width = 480;
+    fireworksCanvas.height = 200;
   }
   window.addEventListener('resize', () => {
-    resizeStars();
+    resizeCanvases();
     initStars();
   });
-  resizeStars();
+  resizeCanvases();
   initStars();
 
+  spawnLantern();
   requestAnimationFrame(gameLoop);
 })();
 </script>
